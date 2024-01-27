@@ -14,7 +14,8 @@ zip = "0.6"
 anyhow = "1.0.71"
 clap = { version = "4.4", features = ["derive"] }
 futures-util = "0.3.30"
-kinode-types = { path = "../../kinode-types" }
+# kinode-types = { path = "../../kinode-types" }
+kinode_types = { git = "ssh://git@github.com/kinode-dao/kinode_types.git", rev = "15dc497" }
 rmp-serde = "1.1.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
