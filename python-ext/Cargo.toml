@@ -1,0 +1,26 @@
+[package]
+name = "kinode-python"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+anyhow = "1.0.71"
+reqwest = { version = "0.11.22", features = ["blocking"] }
+tokio = { version = "1.28", features = ["macros"] }
+walkdir = "2.4"
+zip = "0.6"
+
+[dependencies]
+anyhow = "1.0.71"
+clap = { version = "4.4", features = ["derive"] }
+futures-util = "0.3.30"
+kinode-types = { path = "../../kinode-types" }
+rmp-serde = "1.1.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.28", features = ["macros", "rt-multi-thread", "sync"] }
+tokio-tungstenite = "0.21"
+url = "2.2.2"
+wasi-common = "15.0.1"
+wasmtime = "15.0.1"
+wasmtime-wasi = "15.0.1"

@@ -1,0 +1,17 @@
+[
+    {
+        "process_name": "python",
+        "process_wasm_path": "/python.wasm",
+        "on_exit": "Restart",
+        "request_networking": true,
+        "request_capabilities": [
+            "http_server:distro:sys",
+            "net:distro:sys"
+        ],
+        "grant_capabilities": [
+            "http_server:distro:sys",
+            "vfs:distro:sys"
+        ],
+        "public": false
+    }
+]
