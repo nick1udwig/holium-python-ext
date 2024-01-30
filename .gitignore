@@ -5,3 +5,4 @@
 */*/wasi*
 *swp
 *wasm
+python-ext/src/python_includes.rs
