@@ -1,14 +1,12 @@
 use clap::Parser;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message::{Binary, Close, Text}, WebSocketStream};
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message::{Binary, Close}};
 use wasi_common::pipe::{ReadPipe, WritePipe};
 use wasmtime::{Config, Engine, Linker, Module, Store};
 use wasmtime_wasi::WasiCtxBuilder;
 
-use kinode_types::{
-    Address, KernelMessage, LazyLoadBlob, Message, PythonRequest, PythonResponse, Request, Response, PYTHON_PROCESS_ID,
-};
+use kinode_types::KinodeExtWSMessage;
 
 type Receiver = mpsc::Receiver<Vec<u8>>;
 type Sender = mpsc::Sender<Vec<u8>>;
@@ -24,7 +22,6 @@ struct Args {
 
 include!("python_includes.rs");
 
-const RUNTIME_MODULE_NAME: &str = "python";
 const LOCALHOST: &str = "ws://localhost";
 const PROCESS_ID: &str = "python:python:sys";
 const EVENT_LOOP_CHANNEL_CAPACITY: usize = 100;
@@ -43,8 +40,10 @@ async fn main() -> anyhow::Result<()> {
         tokio::select! {
             Some(message) = read.next() => {
                 match message {
-                    Ok(Binary(code)) => {
-                        python(code, send_to_loop.clone()).await?;
+                    Ok(Binary(ref request)) => {
+                        println!("got req");
+                        let request = rmp_serde::from_slice(request)?;
+                        python(request, send_to_loop.clone()).await?;
                     }
                     Ok(Close(_)) => {
                         eprintln!("Server closed the connection");
@@ -59,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
             }
             Some(result) = recv_in_loop.recv() => {
                 match write.send(Binary(result)).await {
-                    Ok(_) => {}
+                    Ok(_) => { println!("sending result"); }
                     Err(e) => {
                         eprintln!("Error in sending message: {}", e);
                     }
@@ -70,14 +69,19 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn python(
-    code: Vec<u8>,
+    request: KinodeExtWSMessage,
     send_to_loop: Sender,
 ) -> anyhow::Result<()> {
-    let code = String::from_utf8(code)?;
+    let code = String::from_utf8(request.blob)?;
     let send_to_loop = send_to_loop.clone();
     tokio::spawn(async move {
         let result = run_python(&code).await.unwrap();
-        //let result = rmp_serde::to_vec(&result).unwrap();
+        println!("got {:?} from {}", String::from_utf8(result.clone()), code);
+        let result = rmp_serde::to_vec(&KinodeExtWSMessage{
+            id: request.id,
+            message_type: request.message_type,
+            blob: result,
+        }).unwrap();
         let _ = send_to_loop.send(result).await;
     });
     Ok(())

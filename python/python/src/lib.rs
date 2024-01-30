@@ -1,7 +1,7 @@
 use kinode_process_lib::http;
 use kinode_process_lib::kernel_types::{PythonRequest, PythonResponse};
 use kinode_process_lib::{
-    await_message, call_init, get_blob,  our_capabilities, println, Address, LazyLoadBlob, Message, OnExit, ProcessId, Request, Response,
+    await_message, call_init, get_blob, mutate_blob_for_ext_ws, println, Address, LazyLoadBlob, Message, MessageType, Request, Response,
 };
 
 wit_bindgen::generate!({
@@ -28,7 +28,6 @@ fn is_expected_channel_id(
 }
 
 fn handle_ws_message(
-    our: &Address,
     connection: &mut Option<Connection>,
     message: Message,
 ) -> anyhow::Result<()> {
@@ -38,17 +37,7 @@ fn handle_ws_message(
             return Err(anyhow::anyhow!("foo"));
         }
         http::HttpServerRequest::WebSocketOpen { channel_id, .. } => {
-            *connection = Some(Connection {
-                channel_id
-            });
-            http::send_ws_push(
-                channel_id,
-                http::WsMessageType::Text,
-                LazyLoadBlob {
-                    mime: None,
-                    bytes: our.node.as_bytes().to_vec(),
-                },
-            )?;
+            *connection = Some(Connection { channel_id });
         }
         http::HttpServerRequest::WebSocketClose(ref channel_id) => {
             if !is_expected_channel_id(connection, channel_id)? {
@@ -68,8 +57,6 @@ fn handle_ws_message(
                         // TODO: response?
                         return Err(anyhow::anyhow!("foo"));
                     };
-                    let a = String::from_utf8(bytes.clone());
-                    println!("{a:?}");
                     Response::new()
                         .body(serde_json::to_vec(&PythonResponse::Run)?)
                         .blob(LazyLoadBlob {
@@ -77,20 +64,6 @@ fn handle_ws_message(
                             bytes,
                         })
                         .send()?;
-                    //let mut response = Response::new();
-                    //match rmp_serde::from_slice::<Vec<u8>>(bytes)? {
-                    //    Ok(blob) => response
-                    //        .body(serde_json::to_vec(&PythonResponse::Run)?)
-                    //        .blob(LazyLoadBlob {
-                    //            mime: None,
-                    //            bytes: blob,
-                    //        }),
-                    //    Err(e) => response.body(serde_json::to_vec(&PythonResponse::Err(
-                    //        format!("{}", e)))?
-                    //    ),
-                    //}
-                    //.send()?;
-                    //handle_ws_push_binary(blob.bytes)?;
                 }
                 _ => {
                     // TODO: response; handle other types?
@@ -103,7 +76,6 @@ fn handle_ws_message(
 }
 
 fn handle_message(
-    our: &Address,
     connection: &mut Option<Connection>,
 ) -> anyhow::Result<()> {
     let Ok(message) = await_message() else {
@@ -115,26 +87,24 @@ fn handle_message(
             panic!("");
         };
 
+        mutate_blob_for_ext_ws(MessageType::Response);
+
         Request::new()
             .target("our@http_server:distro:sys".parse::<Address>()?)
-            .body(
-                serde_json::json!(http::HttpServerRequest::WebSocketPush {
-                    channel_id: *channel_id,
-                    message_type: http::WsMessageType::Binary,
-                })
-                .to_string()
-                .as_bytes()
-                .to_vec(),
-            )
+            .body(serde_json::to_vec(&http::HttpServerRequest::WebSocketPush {
+                channel_id: *channel_id,
+                message_type: http::WsMessageType::Binary,
+            })?)
+            .expects_response(15)
             .inherit(true)
             .send()?;
 
         let Ok(message) = await_message() else {
             return Ok(());
         };
-        handle_ws_message(our, connection, message)?;
+        handle_ws_message(connection, message)?;
     } else {
-        handle_ws_message(our, connection, message)?;
+        handle_ws_message(connection, message)?;
     }
 
     Ok(())
@@ -146,10 +116,10 @@ fn init(our: Address) {
 
     let mut connection: Option<Connection> = None;
 
-    http::bind_ws_path("/", false, false).unwrap();
+    http::bind_ws_path("/", false, false, true).unwrap();
 
     loop {
-        match handle_message(&our, &mut connection) {
+        match handle_message(&mut connection) {
             Ok(()) => {}
             Err(e) => {
                 println!("{our}: error: {:?}", e);
