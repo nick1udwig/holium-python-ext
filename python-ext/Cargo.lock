@@ -1162,7 +1162,7 @@ dependencies = [
  "anyhow",
  "clap",
  "futures-util",
- "kinode-types",
+ "kinode_types",
  "reqwest",
  "rmp-serde",
  "serde",
@@ -1178,8 +1178,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "kinode-types"
+name = "kinode_types"
 version = "0.1.0"
+source = "git+https://github.com/kinode-dao/kinode-types?rev=24b4015#24b40159b2ddd899c2510719d596d98d2083fb68"
 dependencies = [
  "anyhow",
  "lazy_static",

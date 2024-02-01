@@ -6,7 +6,7 @@ use wasi_common::pipe::{ReadPipe, WritePipe};
 use wasmtime::{Config, Engine, Linker, Module, Store};
 use wasmtime_wasi::WasiCtxBuilder;
 
-use kinode_types::KinodeExtWSMessage;
+use kinode_types::HttpServerAction;
 
 type Receiver = mpsc::Receiver<Vec<u8>>;
 type Sender = mpsc::Sender<Vec<u8>>;
@@ -41,7 +41,6 @@ async fn main() -> anyhow::Result<()> {
             Some(message) = read.next() => {
                 match message {
                     Ok(Binary(ref request)) => {
-                        println!("got req");
                         let request = rmp_serde::from_slice(request)?;
                         python(request, send_to_loop.clone()).await?;
                     }
@@ -69,17 +68,20 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn python(
-    request: KinodeExtWSMessage,
+    request: HttpServerAction,
     send_to_loop: Sender,
 ) -> anyhow::Result<()> {
-    let code = String::from_utf8(request.blob)?;
+    let HttpServerAction::WebSocketExtPushData { id, kinode_message_type, blob } = request else {
+        return Err(anyhow::anyhow!(""));
+    };
+    let code = String::from_utf8(blob)?;
     let send_to_loop = send_to_loop.clone();
     tokio::spawn(async move {
         let result = run_python(&code).await.unwrap();
-        println!("got {:?} from {}", String::from_utf8(result.clone()), code);
-        let result = rmp_serde::to_vec(&KinodeExtWSMessage{
-            id: request.id,
-            message_type: request.message_type,
+        println!("got\n{:?}\nfrom\n{}", String::from_utf8(result.clone()), code);
+        let result = rmp_serde::to_vec(&HttpServerAction::WebSocketExtPushData {
+            id,
+            kinode_message_type,
             blob: result,
         }).unwrap();
         let _ = send_to_loop.send(result).await;

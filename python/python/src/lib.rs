@@ -1,7 +1,7 @@
 use kinode_process_lib::http;
-use kinode_process_lib::kernel_types::{PythonRequest, PythonResponse};
+use kinode_process_lib::kernel_types::{MessageType, PythonRequest, PythonResponse};
 use kinode_process_lib::{
-    await_message, call_init, get_blob, mutate_blob_for_ext_ws, println, Address, LazyLoadBlob, Message, MessageType, Request, Response,
+    await_message, call_init, get_blob, println, Address, LazyLoadBlob, Message, Request, Response,
 };
 
 wit_bindgen::generate!({
@@ -87,13 +87,12 @@ fn handle_message(
             panic!("");
         };
 
-        mutate_blob_for_ext_ws(MessageType::Response);
-
         Request::new()
             .target("our@http_server:distro:sys".parse::<Address>()?)
-            .body(serde_json::to_vec(&http::HttpServerRequest::WebSocketPush {
+            .body(serde_json::to_vec(&http::HttpServerAction::WebSocketExtPushOutgoing {
                 channel_id: *channel_id,
                 message_type: http::WsMessageType::Binary,
+                desired_reply_type: MessageType::Response,
             })?)
             .expects_response(15)
             .inherit(true)
