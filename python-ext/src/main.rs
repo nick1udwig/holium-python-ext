@@ -6,7 +6,7 @@ use wasi_common::pipe::{ReadPipe, WritePipe};
 use wasmtime::{Config, Engine, Linker, Module, Store};
 use wasmtime_wasi::WasiCtxBuilder;
 
-use kinode_types::HttpServerAction;
+use kinode_lib::types::http_server::HttpServerAction;
 
 type Receiver = mpsc::Receiver<Vec<u8>>;
 type Sender = mpsc::Sender<Vec<u8>>;
