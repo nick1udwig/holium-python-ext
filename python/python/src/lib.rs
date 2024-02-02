@@ -1,8 +1,11 @@
 use kinode_process_lib::http;
-use kinode_process_lib::kernel_types::{MessageType, PythonRequest, PythonResponse};
+use kinode_process_lib::kernel_types::MessageType;
 use kinode_process_lib::{
     await_message, call_init, get_blob, println, Address, LazyLoadBlob, Message, Request, Response,
 };
+
+mod python_types;
+use python_types::{PythonRequest, PythonResponse};
 
 wit_bindgen::generate!({
     path: "wit",
@@ -115,7 +118,7 @@ fn init(our: Address) {
 
     let mut connection: Option<Connection> = None;
 
-    http::bind_ws_path("/", false, false, true).unwrap();
+    http::bind_ext_path("/").unwrap();
 
     loop {
         match handle_message(&mut connection) {
