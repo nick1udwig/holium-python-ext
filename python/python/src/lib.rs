@@ -24,7 +24,7 @@ fn is_expected_channel_id(
     channel_id: &u32,
 ) -> anyhow::Result<bool> {
     let Some(Connection { channel_id: ref current_channel_id }) = connection else {
-        return Err(anyhow::anyhow!("foo"));
+        return Err(anyhow::anyhow!("a"));
     };
 
     Ok(channel_id == current_channel_id)
@@ -37,7 +37,7 @@ fn handle_ws_message(
     match serde_json::from_slice::<http::HttpServerRequest>(message.body())? {
         http::HttpServerRequest::Http(_) => {
             // TODO: response?
-            return Err(anyhow::anyhow!("foo"));
+            return Err(anyhow::anyhow!("b"));
         }
         http::HttpServerRequest::WebSocketOpen { channel_id, .. } => {
             *connection = Some(Connection { channel_id });
@@ -45,20 +45,20 @@ fn handle_ws_message(
         http::HttpServerRequest::WebSocketClose(ref channel_id) => {
             if !is_expected_channel_id(connection, channel_id)? {
                 // TODO: response?
-                return Err(anyhow::anyhow!("foo"));
+                return Err(anyhow::anyhow!("c"));
             }
             *connection = None;
         }
         http::HttpServerRequest::WebSocketPush { ref channel_id, ref message_type } => {
             if !is_expected_channel_id(connection, channel_id)? {
                 // TODO: response?
-                return Err(anyhow::anyhow!("foo"));
+                return Err(anyhow::anyhow!("d"));
             }
             match message_type {
                 http::WsMessageType::Binary => {
                     let Some(LazyLoadBlob { bytes, .. }) = get_blob() else {
                         // TODO: response?
-                        return Err(anyhow::anyhow!("foo"));
+                        return Err(anyhow::anyhow!("e"));
                     };
                     Response::new()
                         .body(serde_json::to_vec(&PythonResponse::Run)?)
@@ -70,7 +70,7 @@ fn handle_ws_message(
                 }
                 _ => {
                     // TODO: response; handle other types?
-                    return Err(anyhow::anyhow!("foo"));
+                    return Err(anyhow::anyhow!("f"));
                 }
             }
         }
@@ -100,11 +100,6 @@ fn handle_message(
             .expects_response(15)
             .inherit(true)
             .send()?;
-
-        let Ok(message) = await_message() else {
-            return Ok(());
-        };
-        handle_ws_message(connection, message)?;
     } else {
         handle_ws_message(connection, message)?;
     }
