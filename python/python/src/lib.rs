@@ -56,16 +56,9 @@ fn handle_ws_message(
             }
             match message_type {
                 http::WsMessageType::Binary => {
-                    let Some(LazyLoadBlob { bytes, .. }) = get_blob() else {
-                        // TODO: response?
-                        return Err(anyhow::anyhow!("e"));
-                    };
                     Response::new()
-                        .body(serde_json::to_vec(&PythonResponse::Run)?)
-                        .blob(LazyLoadBlob {
-                            mime: None,
-                            bytes,
-                        })
+                        .body(serde_json::to_vec(&PythonResponse::RunScript)?)
+                        .inherit(true)
                         .send()?;
                 }
                 _ => {
@@ -85,7 +78,7 @@ fn handle_message(
         return Ok(());
     };
 
-    if let Ok(PythonRequest::Run) = serde_json::from_slice(message.body()) {
+    if let Ok(PythonRequest::RunScript { .. }) = rmp_serde::from_slice(message.body()) {
         let Some(Connection { channel_id }) = connection else {
             panic!("");
         };
@@ -98,7 +91,8 @@ fn handle_message(
                 desired_reply_type: MessageType::Response,
             })?)
             .expects_response(15)
-            .inherit(true)
+            .blob_bytes(message.body())
+            //.inherit(true)
             .send()?;
     } else {
         handle_ws_message(connection, message)?;

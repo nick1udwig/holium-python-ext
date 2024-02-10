@@ -1,4 +1,4 @@
-# kinode-python
+# python
 
 The Kinode python-ext and python process.
 
@@ -22,6 +22,5 @@ cd python-ext
 cargo run --release -- --port 8080
 
 # Send a command
-echo 'import sys; from pprint import pprint as pp; pp(sys.path); pp(sys.platform); raise Exception("oops"); pp(sys.platform)' > test.py
-kit i python:python:sys '"Run"' -b test.py
+# TODO
 ```
