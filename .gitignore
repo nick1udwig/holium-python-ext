@@ -7,3 +7,7 @@
 *wasm
 python-ext/src/python_includes.rs
 python/pkg/*.wasm
+
+# all .DS_Store
+*/.DS_Store
+.DS_Store
