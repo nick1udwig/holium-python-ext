@@ -1981,6 +1981,7 @@ dependencies = [
 [[package]]
 name = "kinode_lib"
 version = "0.6.0"
+source = "git+https://github.com/kinode-dao/kinode?rev=f9801df#f9801df505e3aa76ecc26ec58b89dc14273bafdb"
 dependencies = [
  "lib",
 ]
@@ -2028,6 +2029,7 @@ checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
 [[package]]
 name = "lib"
 version = "0.6.0"
+source = "git+https://github.com/kinode-dao/kinode?rev=f9801df#f9801df505e3aa76ecc26ec58b89dc14273bafdb"
 dependencies = [
  "ethers",
  "ethers-providers",

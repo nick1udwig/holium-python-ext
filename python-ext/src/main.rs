@@ -139,15 +139,15 @@ async fn install_requirements(requirements_path: PathBuf) -> anyhow::Result<()> 
     Ok(())
 }
 
-fn make_pkg_dir(home: &str, package_id: &str) -> PathBuf {
+fn make_package_dir(home: &str, package_id: &str) -> PathBuf {
     PathBuf::from(home)
         .join("vfs")
         .join(package_id)
-        .join("pkg")
 }
 
 fn make_full_path(home: &str, package_id: &str, path: &str) -> PathBuf {
-    make_pkg_dir(home, package_id)
+    make_package_dir(home, package_id)
+        .join("pkg")
         .join("scripts")
         .join(path)
 }
@@ -167,7 +167,7 @@ async fn run_python(
     let script_contents = fs::read_to_string(script_path).await?;
 
     println!("running python");
-    let package_path = make_pkg_dir(home, package_id);
+    let package_path = make_package_dir(home, package_id);
     let response = Python::with_gil(|py| -> PyResult<_> {
         // set the current working directory to the package's directory
         let os = PyModule::import(py, "os")?;
